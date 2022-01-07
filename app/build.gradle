@@ -22,6 +22,15 @@ android {
         }
     }
 
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            def variantName = "GerhardRvv"
+            def versionName = variant.versionName
+            def formattedDate = new Date().format('dd-MM-YYYY')
+            outputFileName = "LitIt_${variantName}_D_${formattedDate}_V_${versionName}.apk"
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
