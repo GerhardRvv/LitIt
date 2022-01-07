@@ -1,74 +1,116 @@
 package com.gerhardrvv.litit.viewmodel
 
 import android.app.Application
-import android.util.Log
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
-import com.gerhardrvv.litit.viewmodel.InputTypes.AVAILABLE_COLORS
-import com.gerhardrvv.litit.viewmodel.InputTypes.AVAILABLE_LIGHT_BULBS
-import com.gerhardrvv.litit.viewmodel.InputTypes.QTY_OF_EACH_LIGHT_BULB_COLOR
+import androidx.lifecycle.viewModelScope
+import com.gerhardrvv.litit.data.InputTypes.AVAILABLE_COLORS
+import com.gerhardrvv.litit.data.InputTypes.AVAILABLE_LIGHT_BULBS
+import com.gerhardrvv.litit.data.InputTypes.NUMBER_OF_RANDOM_LIGHT_BULBS
+import com.gerhardrvv.litit.data.InputTypes.QTY_OF_EACH_LIGHT_BULB_COLOR
+import com.gerhardrvv.litit.data.InputTypes.REPEATS
+import com.gerhardrvv.litit.data.models.LightBulbColorModel
+import com.gerhardrvv.litit.data.models.LightBulbModel
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import kotlin.random.Random
 
-class MainViewModel() : AndroidViewModel(Application()) {
+class MainViewModel : AndroidViewModel(Application()) {
+
+    val averageResult: MutableState<Double> = mutableStateOf(0.0)
+
+    private var listOfUniqueNum = mutableMapOf<Int, Boolean>()
+    private var uniqueColorCounter: Double = 0.0
 
     fun generateLightBulbs(parameters: Map<String, Int>) {
 
-        val availableColors = mutableListOf<LbColor>()
-        for (idx in 0 until parameters.getValue(AVAILABLE_COLORS.value) + 1) {
-            availableColors.add(
-                LbColor(
-                    colorId = idx,
-                    qty = parameters.getValue(QTY_OF_EACH_LIGHT_BULB_COLOR.value)
-                )
-            )
-        }
+        listOfUniqueNum = mutableMapOf()
+        averageResult.value = 0.0
 
-        val availableBulbsList = mutableListOf<LightBulb>()
-        for (idx in 0 until parameters.getValue(AVAILABLE_LIGHT_BULBS.value) + 1) {
-            getColor(availableColors)?.let {
-                LightBulb(
-                    id = idx.toLong(),
-                    color = it
+        val numberOfRepeats = parameters.getValue(REPEATS.value)
+
+        viewModelScope.launch {
+            for (idx in 0 until numberOfRepeats) {
+                val colors = createListOfColors(
+                    parameters.getValue(AVAILABLE_COLORS.value) + 1,
+                    parameters.getValue(QTY_OF_EACH_LIGHT_BULB_COLOR.value)
                 )
-            }?.let {
+                val lightBulbsAvailable = createListOfAvailableLightBulbs(
+                    parameters.getValue(AVAILABLE_LIGHT_BULBS.value) + 1,
+                    colors
+                )
+                uniqueColorCounter = + getUniqueNumberOfColors(
+                    parameters.getValue(NUMBER_OF_RANDOM_LIGHT_BULBS.value) +1,
+                    lightBulbsAvailable
+                )
+            }
+        }
+        averageResult.value = (uniqueColorCounter / numberOfRepeats * 100.00).roundToInt() / 100.00
+    }
+
+    private fun getUniqueNumberOfColors(
+        numberOfRandomLightBulbs: Int,
+        lightBulbsAvailable: MutableList<LightBulbModel>
+    ): Double {
+
+        for (idx in 0 until numberOfRandomLightBulbs) {
+            val randomIdx = Random.nextInt(0, lightBulbsAvailable.size - 1)
+            val lb = lightBulbsAvailable[randomIdx]
+            if (!listOfUniqueNum.containsKey(lb.color.colorId)) {
+                listOfUniqueNum[lb.color.colorId] = true
+            }
+        }
+        return listOfUniqueNum.size.toDouble()
+    }
+
+    private fun createListOfAvailableLightBulbs(
+        numberOfAvailableLightBulbs: Int,
+        listOfAvailableColors: MutableList<LightBulbColorModel>
+    ): MutableList<LightBulbModel> {
+
+        val availableBulbsList = mutableListOf<LightBulbModel>()
+
+        for (idx in 0 until numberOfAvailableLightBulbs) {
+            LightBulbModel(
+                id = idx.toLong(),
+                color = getColor(listOfAvailableColors)
+            ).let {
                 availableBulbsList.add(
                     it
                 )
             }
         }
-
-        for (i in availableBulbsList) {
-            Log.d("GERHARD", "${i.id} ${i.color.colorId}  ${i.color.qty}")
-        }
+        return availableBulbsList
     }
 
-    private fun getColor(availableColors: MutableList<LbColor>): LbColor? {
-        var randomIdx : Int
-        var lbColor : LbColor? = null
-        while (lbColor == null) {
-            randomIdx = Random.nextInt(0, availableColors.size -1)
-            if (availableColors[randomIdx].qty > 0){
-                lbColor = availableColors[randomIdx]
-                availableColors[randomIdx].qty -1
+    private fun createListOfColors(
+        numberOfAvailableColors: Int,
+        qtyAvailableOfEachColor: Int
+    ): MutableList<LightBulbColorModel> {
+        val availableColors = mutableListOf<LightBulbColorModel>()
+        for (idx in 0 until numberOfAvailableColors) {
+            availableColors.add(
+                LightBulbColorModel(
+                    colorId = idx,
+                    qty = qtyAvailableOfEachColor
+                )
+            )
+        }
+        return availableColors
+    }
+
+    private fun getColor(availableColors: MutableList<LightBulbColorModel>): LightBulbColorModel {
+        var randomIdx: Int
+        var lightBulbColor: LightBulbColorModel? = null
+        while (lightBulbColor == null) {
+            randomIdx = Random.nextInt(0, availableColors.size - 1)
+            if (availableColors[randomIdx].qty > 0) {
+                lightBulbColor = availableColors[randomIdx].apply {
+                    qty = (qty - 1)
+                }
             }
         }
-        return lbColor
+        return lightBulbColor
     }
-}
-
-data class LightBulb(
-    val id: Long,
-    val color: LbColor
-)
-
-data class LbColor(
-    val colorId: Int,
-    val qty: Int
-)
-
-enum class InputTypes(val value: String) {
-    AVAILABLE_LIGHT_BULBS("lbAvailable"),
-    AVAILABLE_COLORS("lbColors"),
-    QTY_OF_EACH_LIGHT_BULB_COLOR("LbQtyEachColor"),
-    NUMBER_OF_RANDOM_LIGHT_BULBS("lbRandomNumber"),
-    REPEATS("lbRepeats")
 }
