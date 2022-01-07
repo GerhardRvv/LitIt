@@ -15,26 +15,26 @@ import androidx.compose.ui.graphics.Color
 import com.google.accompanist.systemuicontroller.rememberSystemUiController
 
 private val DarkColorPalette = LitItColors(
-    primary = Purple200,
+    primary = darkText,
     primaryVariant = Purple700,
-    secondary = Teal200,
-    background = Color.White,
-    surface = Color.White,
+    secondary = darkCards,
+    background = darkBackground,
+    surface = darkCards,
     onPrimary = Color.White,
     onSecondary = Color.Black,
-    onBackground = Color.Black,
+    onBackground = darkToolBar,
     onSurface = Color.Black,
 )
 
 private val LightColorPalette = LitItColors(
-    primary = Purple500,
+    primary = lightText,
     primaryVariant = Purple700,
-    secondary = Teal200,
+    secondary = darkToolBar,
     background = Color.White,
     surface = Color.White,
     onPrimary = Color.White,
     onSecondary = Color.Black,
-    onBackground = Color.Black,
+    onBackground = lightBackground,
     onSurface = Color.Black,
 )
 
